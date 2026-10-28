@@ -2,6 +2,10 @@
 
 This report documents the bugs discovered in the buggy programs, including the failing test cases, root cause analysis, and the applied code fixes.
 
+---
+
+# Problem 1: Doctest (`problem1.py`)
+
 Problem 1 is tested with `doctest`, so the "failing test cases" below are the doctest examples inside the docstring of `calculate_trip_fare()`. The fare logic in the function body was checked against every pricing rule and is correct. All the defects were in the pre-written doctests. Run command:
 
 ```bash
@@ -227,3 +231,44 @@ The docstring now has 15 doctest examples, all passing:
 | Exceptions | `-100.0` km, `-0.1` km, invalid type `"student"` |
 
 Final result of `python -m doctest -v problem1.py`: **15 passed, 0 failed.**
+
+---
+
+# Problem 2: Unittest (`problem2.py`)
+
+## BankAccount — No Bugs Found
+
+### Program Under Test
+- **File:** `problem2.py`
+- **Class:** `BankAccount`
+- **Test File:** `test_problem2.py`
+
+### Test Suite Summary
+
+8 test methods were implemented and executed:
+
+| Test Method | What It Covers |
+|---|---|
+| `test_initial_state_multi_attributes` | Verifies all attributes on creation for both empty and funded accounts, including `transaction_history` and `get_summary()` |
+| `test_deposit_updates_multiple_attributes` | Deposits $150 into an empty account; checks balance, status, transaction record fields, and summary |
+| `test_withdrawal_within_balance_multi_attributes` | Withdraws $50 with a $2.50 fee from a funded account; checks balance, status, and transaction record |
+| `test_overdraft_withdrawal_and_status_transition` | Withdraws $50 from a zero-balance account; verifies balance becomes -50 and status transitions to `OVERDRAWN` |
+| `test_deposit_recovering_from_overdrawn_status` | Deposits $50 into an overdrawn account; verifies balance returns to 0 and status transitions back to `ACTIVE` |
+| `test_transfer_between_accounts_multi_attributes` | Transfers $50 with a $5 fee; verifies both sender and recipient balances, transaction records, and summaries |
+| `test_frozen_account_restrictions` | Freezes an account and confirms `RuntimeError` on deposit, withdraw, and transfer; then unfreezes and verifies `ACTIVE` status |
+| `test_invalid_operations_raise_exceptions` | Confirms `ValueError` on non-positive amounts, negative fee, and overdraft limit breach; `TypeError` on invalid transfer target; `ValueError` on invalid constructor arguments |
+
+### Test Result
+
+```text
+Ran 8 tests in 0.001s
+
+OK
+```
+
+All 8 tests passed. No bugs were found in `problem2.py`. The `BankAccount` class correctly implements:
+- Overdraft protection and status transitions (`ACTIVE` → `OVERDRAWN` → `ACTIVE`)
+- Accurate transaction history recording with all required fields
+- Fee deduction on withdrawal and transfer
+- Account freezing/unfreezing with appropriate exception raising
+- Input validation with correct exception types
