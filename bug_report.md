@@ -312,3 +312,158 @@ All 7 tests passed. No bugs were found in `problem3.py`. The `Order` class corre
 - Free shipping threshold at $50.00 net subtotal
 - SAVE10 and FLAT15 coupons stacking correctly on top of tier discounts
 - Status machine guarding all mutations behind `PENDING` check
+
+---
+
+# Problem 4: Unittest (`problem4.py`)
+
+## MeetingRoom — 1 Bug Found
+
+### Program Under Test
+- **File:** `problem4.py`
+- **Class:** `MeetingRoom`
+- **Test File:** `test_problem4.py`
+
+### Test Suite Summary
+
+6 test methods were implemented and executed:
+
+| Test Method | What It Covers |
+|---|---|
+| `test_initial_state` | Verifies all 5 attributes on creation; `get_free_slots` returns whole window; utilization 0.0; invalid capacity raises `ValueError` |
+| `test_single_booking` | Books `B001` 9→12 with 5 attendees; checks booking record fields, `total_hours_booked` (3), utilization (0.3), and free slots `[(8,9),(12,18)]` |
+| `test_back_to_back_allowed` | Back-to-back `B002` (9-11) and `B003` (11-13); verifies 2 bookings, 4h total, free slots `[(8,9),(13,18)]` |
+| `test_overlapping_rejected` | Partial overlap (10-14) and fully-contained (10-11) both raise `ValueError`; state unchanged (1 booking, 3h) |
+| `test_cancel_booking` | Two bookings then cancel `B007`; checks remaining booking `B008`, `total_hours_booked` 3, free slots restored; cancel non-existent raises `KeyError` |
+| `test_exceptions` | Attendees > capacity, end ≤ start, negative start, duplicate booking ID all raise `ValueError`; maintenance blocks booking with `RuntimeError` |
+
+### Bug Report 5: Back-to-back meetings incorrectly flagged as conflict
+
+### 1. Program Under Test
+- **File:** `problem4.py`
+- **Class / Function:** `MeetingRoom.book()`
+
+### 2. Failing Test Case
+
+```python
+def test_back_to_back_allowed(self):
+    """Back-to-back bookings (9-11 then 11-13) must not conflict."""
+    self.room.book("B002", "Daily Standup", 9, 11, 3)
+    self.room.book("B003", "Design Review", 11, 13, 8)
+    ...
+```
+
+**Test Output / Error Message:**
+```text
+ERROR: test_back_to_back_allowed
+ValueError: Time slot [11, 13] conflicts with booking 'B002' [9, 11]
+```
+
+### 3. Root Cause Analysis
+- **Expected Behavior:** A booking ending at 11:00 and another starting at 11:00 are back-to-back and must not conflict (per the docstring: "Back-to-back meetings (e.g. 9-10 and 10-11) do NOT conflict and are allowed").
+- **Actual Behavior:** The second booking raised `ValueError`.
+- **Root Cause:** The conflict check used strict inequality `end_time < b["start_time"] or start_time > b["end_time"]`. For the pair [11,13] vs [9,11]: `13 < 9` is False, `11 > 11` is False, so `not(False or False)` = True → reported as a conflict. The boundary case (one ends exactly where the other starts) was treated as an overlap because `>` did not allow equality on the start side.
+
+### 4. Code Fix & Diff
+
+```diff
+-        if not (end_time < b["start_time"] or start_time > b["end_time"]):
++        if not (end_time <= b["start_time"] or start_time >= b["end_time"]):
+```
+
+After the fix, all 6 tests pass.
+
+---
+
+# Problem 5: Unittest (`problem5.py`)
+
+## Data Pipeline Aggregator — 2 Bugs Found
+
+### Program Under Test
+- **File:** `problem5.py`
+- **Function:** `clean_and_aggregate()`
+- **Test File:** `test_problem5.py` (provided, unchanged)
+
+### Test Suite Summary
+
+The provided suite has 9 tests. Before fixes, 2 failed. After fixes, all 9 pass.
+
+### Bug Report 6: `min` and `max` aggregations swapped
+
+### 1. Program Under Test
+- **File:** `problem5.py`
+- **Class / Function:** `clean_and_aggregate()`
+
+### 2. Failing Test Case
+
+```python
+def test_aggregate_min_and_max(self):
+    min_result = clean_and_aggregate(self.sample_sales, group_by="region", metric="sales", aggregation="min")
+    max_result = clean_and_aggregate(self.sample_sales, group_by="region", metric="sales", aggregation="max")
+    self.assertAlmostEqual(min_result["North"], 100.0)
+    self.assertAlmostEqual(max_result["North"], 200.0)
+```
+
+**Test Output / Error Message:**
+```text
+AssertionError: 200.0 != 100.0 within 7 places (100.0 difference)
+```
+
+### 3. Root Cause Analysis
+- **Expected Behavior:** `min` aggregation returns the smallest value (North → 100.0), `max` returns the largest (North → 200.0).
+- **Actual Behavior:** `min` returned 200.0 and `max` returned 100.0 — exactly inverted.
+- **Root Cause:** The two `elif` branches called the wrong builtin: `min` called `max(values)`, `max` called `min(values)`.
+
+### 4. Code Fix & Diff
+
+```diff
+         elif agg_op == "min":
+-            val = max(values)
++            val = min(values)
+         elif agg_op == "max":
+-            val = min(values)
++            val = max(values)
+```
+
+### Bug Report 7: Empty `records` list does not raise `ValueError`
+
+### 1. Program Under Test
+- **File:** `problem5.py`
+- **Class / Function:** `clean_and_aggregate()`
+
+### 2. Failing Test Case
+
+```python
+def test_empty_dataset_raises_value_error(self):
+    with self.assertRaises(ValueError):
+        clean_and_aggregate([], group_by="region", metric="sales")
+```
+
+**Test Output / Error Message:**
+```text
+AssertionError: ValueError not raised
+```
+
+### 3. Root Cause Analysis
+- **Expected Behavior:** Per the docstring, an empty `records` list must raise `ValueError`.
+- **Actual Behavior:** The function returned `{}` (empty dict) instead of raising.
+- **Root Cause:** There was no guard for `not records` at the start of the function. The loop over `records` simply produced no groups, and the aggregation step returned an empty dict.
+
+### 4. Code Fix & Diff
+
+```diff
++    if not records:
++        raise ValueError("records must not be empty")
++
+     valid_aggregations = {"sum", "mean", "min", "max", "count"}
+```
+
+### Test Result
+
+```text
+Ran 9 tests in 0.011s
+
+OK
+```
+
+All 9 tests pass after the two fixes.
