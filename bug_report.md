@@ -272,3 +272,43 @@ All 8 tests passed. No bugs were found in `problem2.py`. The `BankAccount` class
 - Fee deduction on withdrawal and transfer
 - Account freezing/unfreezing with appropriate exception raising
 - Input validation with correct exception types
+
+---
+
+# Problem 3: Unittest (`problem3.py`)
+
+## Order — No Bugs Found
+
+### Program Under Test
+- **File:** `problem3.py`
+- **Class:** `Order`
+- **Test File:** `test_problem3.py`
+
+### Test Suite Summary
+
+7 test methods were implemented and executed:
+
+| Test Method | What It Covers |
+|---|---|
+| `test_initial_state_multi_attributes` | Verifies all 10 attributes on creation for all three tiers; case-insensitive tier input; `get_summary()` on empty order; invalid tier raises `ValueError` |
+| `test_add_item_updates_multiple_attributes` | Adds `wireless_mouse` ($17.99 × 3); checks items dict structure, subtotal, tax, shipping, final_total, and summary; duplicate name increments quantity; invalid price/qty raise `ValueError` |
+| `test_tier_discounts_multi_attributes` | Same item across all three tiers (`usb_hub` $13.50 × 3, subtotal $40.50); verifies discount, tax, and final_total all decrease proportionally with tier |
+| `test_coupon_discounts_multi_attributes` | Tests SAVE10 (case-insensitive), FLAT15 (normal and capped below $15), and SAVE10 stacked on gold tier; invalid coupon raises `ValueError` |
+| `test_tax_and_shipping_multi_attributes` | Grocery items are tax-exempt; free shipping when net ≥ $50; shipping charged when net < $50; mixed grocery + general order taxes only the general portion |
+| `test_remove_item_multi_attributes` | Decreases quantity, full removal, `KeyError` for missing item, `ValueError` for zero/negative remove quantity; verifies all monetary attributes reset when order empties |
+| `test_checkout_cancel_status_transitions` | Empty order rejects checkout; successful checkout → `PAID`; PAID rejects add/remove/coupon/cancel; cancel PENDING → `CANCELLED`; CANCELLED rejects modifications |
+
+### Test Result
+
+```text
+Ran 7 tests in 0.001s
+
+OK
+```
+
+All 7 tests passed. No bugs were found in `problem3.py`. The `Order` class correctly implements:
+- Subtotal, tier discount, coupon discount, tax, shipping and final_total recalculation on every mutation
+- Tax exemption for grocery items and proportional tax scaling via `discount_ratio`
+- Free shipping threshold at $50.00 net subtotal
+- SAVE10 and FLAT15 coupons stacking correctly on top of tier discounts
+- Status machine guarding all mutations behind `PENDING` check
