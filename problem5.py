@@ -29,6 +29,9 @@ def clean_and_aggregate(
         TypeError: If records is not a list or metric values are not numeric.
     """
 
+    if not records:
+        raise ValueError("records must not be empty")
+
     valid_aggregations = {"sum", "mean", "min", "max", "count"}
     agg_op = aggregation.lower()
     if agg_op not in valid_aggregations:
@@ -71,9 +74,9 @@ def clean_and_aggregate(
         elif agg_op == "mean":
             val = sum(values) / len(values)
         elif agg_op == "min":
-            val = max(values)
-        elif agg_op == "max":
             val = min(values)
+        elif agg_op == "max":
+            val = max(values)
         elif agg_op == "count":
             val = len(values)
         else:
